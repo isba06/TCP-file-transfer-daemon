@@ -4,8 +4,9 @@
 #include <boost/filesystem.hpp>
 #include "server.h"
 #include "../Log/logger.h"
-#include <syslog.h>
 #include <boost/log/trivial.hpp>
+#include <boost/bind.hpp>
+
 int main(int argc, char* argv[])
 {
     if (argc != 3) {
@@ -19,6 +20,10 @@ int main(int argc, char* argv[])
         boost::asio::io_service io_service;
 
         Server server(io_service, std::stoi(argv[1]), argv[2]);
+        boost::asio::signal_set signals(io_service, SIGHUP, SIGTERM);
+        signals.async_wait(
+                boost::bind(&boost::asio::io_service::stop, &io_service));
+
         io_service.notify_fork(boost::asio::io_service::fork_prepare);
         if (pid_t pid = fork())
         {
